@@ -1,0 +1,8 @@
+cpmpy
+pycona
+ortools
+numpy
+pandas
+joblib
+xgboost
+scikit-learn

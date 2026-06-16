@@ -1,0 +1,161 @@
+"""Global-constraint encoding of the 'exam_timetabling' paper benchmark."""
+import cpmpy as cp
+from pycona import ConstraintOracle
+from pycona import ProblemInstance, absvar
+
+
+def day_of_exam(course, slots_per_day):
+    """Return the exam day index for a course given slots per day."""
+    return course // slots_per_day
+
+
+def construct_examtt_simple(nsemesters=9, courses_per_semester=6, slots_per_day=9, days_for_exams=14):
+    """Build the exam-timetabling ProblemInstance, oracle, and overfitted constraints."""
+    total_courses = nsemesters * courses_per_semester
+    total_slots = slots_per_day * days_for_exams
+
+    parameters = {
+        'nsemesters': nsemesters,
+        'courses_per_semester': courses_per_semester,
+        'slots_per_day': slots_per_day,
+        'days_for_exams': days_for_exams
+    }
+
+    variables = cp.intvar(1, total_slots, shape=(nsemesters, courses_per_semester), name="var")
+
+    model = cp.Model()
+
+    model += cp.AllDifferent(variables)
+
+    for semester_index, row in enumerate(variables):
+        exam_days = [day_of_exam(course, slots_per_day) for course in row]
+        model += cp.AllDifferent(exam_days)
+
+    all_exams = variables.flatten()
+    max_exams_per_day = (total_courses + days_for_exams - 1) // days_for_exams + 1
+    for day in range(days_for_exams):
+
+        exams_on_day = cp.Count([day_of_exam(exam, slots_per_day) for exam in all_exams], day)
+
+        model += (exams_on_day <= max_exams_per_day)
+
+    C_T = list(model.constraints)
+
+    overfitted_constraints = []
+
+    if nsemesters >= 4:
+        first_four_sems = variables[:4, :].flatten()
+        first_four_days = [day_of_exam(exam, slots_per_day) for exam in first_four_sems]
+        overfitted_c1 = cp.AllDifferent(first_four_days)
+        overfitted_constraints.append(overfitted_c1)
+        model += overfitted_c1
+
+    if nsemesters >= 5 and courses_per_semester >= 2:
+        first_five = variables[:5, :].flatten()
+        time_of_day = [exam % slots_per_day for exam in first_five]
+        overfitted_c2 = cp.AllDifferent(time_of_day[:min(slots_per_day, len(time_of_day))])
+        overfitted_constraints.append(overfitted_c2)
+        model += overfitted_c2
+
+    if nsemesters >= 6 and courses_per_semester >= 3:
+        first_three_cols = variables[:, :3].flatten()
+        overfitted_c3 = cp.AllDifferent(first_three_cols[:min(18, len(first_three_cols))])
+        overfitted_constraints.append(overfitted_c3)
+        model += overfitted_c3
+
+    if nsemesters >= 6 and courses_per_semester >= 6:
+        diagonal = [variables[i, i] for i in range(min(6, nsemesters, courses_per_semester))]
+        overfitted_c4 = cp.AllDifferent(diagonal)
+        overfitted_constraints.append(overfitted_c4)
+        model += overfitted_c4
+
+    if nsemesters >= 6 and courses_per_semester >= 6:
+        anti_diag = [variables[i, courses_per_semester - 1 - i] 
+                     for i in range(min(6, nsemesters, courses_per_semester))]
+        overfitted_c5 = cp.AllDifferent(anti_diag)
+        overfitted_constraints.append(overfitted_c5)
+        model += overfitted_c5
+
+    if nsemesters >= 8 and courses_per_semester >= 4:
+        even_subset = variables[::2, :4].flatten()
+        overfitted_c6 = cp.AllDifferent(even_subset[:min(16, len(even_subset))])
+        overfitted_constraints.append(overfitted_c6)
+        model += overfitted_c6
+
+    if nsemesters >= 7 and courses_per_semester >= 4:
+        odd_subset = variables[1::2, -4:].flatten()
+        overfitted_c7 = cp.AllDifferent(odd_subset[:min(16, len(odd_subset))])
+        overfitted_constraints.append(overfitted_c7)
+        model += overfitted_c7
+
+    if nsemesters >= 7 and courses_per_semester >= 1:
+        first_col = [variables[sem, 0] for sem in range(min(7, nsemesters))]
+        overfitted_c8 = cp.AllDifferent(first_col)
+        overfitted_constraints.append(overfitted_c8)
+        model += overfitted_c8
+
+    if nsemesters >= 6 and courses_per_semester >= 2:
+        last_col = [variables[sem, -1] for sem in range(min(6, nsemesters))]
+        overfitted_c9 = cp.AllDifferent(last_col)
+        overfitted_constraints.append(overfitted_c9)
+        model += overfitted_c9
+
+    if nsemesters >= 7 and courses_per_semester >= 3:
+        mid_idx = courses_per_semester // 2
+        middle_col = [variables[sem, mid_idx] for sem in range(min(7, nsemesters))]
+        overfitted_c10 = cp.AllDifferent(middle_col)
+        overfitted_constraints.append(overfitted_c10)
+        model += overfitted_c10
+
+    if nsemesters >= 6 and courses_per_semester >= 2:
+        second_col = [variables[sem, 1] for sem in range(min(6, nsemesters))]
+        overfitted_c11 = cp.AllDifferent(second_col)
+        overfitted_constraints.append(overfitted_c11)
+        model += overfitted_c11
+
+    if nsemesters >= 8 and courses_per_semester >= 3:
+        mid_idx = courses_per_semester // 2
+        alternating = [variables[sem, mid_idx] for sem in range(0, min(8, nsemesters), 2)]
+        overfitted_c12 = cp.AllDifferent(alternating)
+        overfitted_constraints.append(overfitted_c12)
+        model += overfitted_c12
+
+    AV = absvar(2)
+
+    lang = [
+        AV[0] == AV[1],
+        AV[0] != AV[1],
+        AV[0] < AV[1],
+        AV[0] > AV[1],
+        AV[0] >= AV[1],
+        AV[0] <= AV[1],
+        day_of_exam(AV[0], slots_per_day) != day_of_exam(AV[1], slots_per_day),
+        day_of_exam(AV[0], slots_per_day) == day_of_exam(AV[1], slots_per_day),
+        cp.Count(AV, AV[0]) <= AV[1],
+        cp.Count(AV, AV[0]) == AV[1]
+    ]
+
+    instance = ProblemInstance(
+        variables=variables,
+        params=parameters,
+        language=lang,
+        name=f"exam_timetabling_semesters{nsemesters}_courses{courses_per_semester}_"
+             f"timeslots{slots_per_day}_days{days_for_exams}"
+    )
+
+    oracle = ConstraintOracle(C_T)
+
+    return instance, oracle, overfitted_constraints
+
+
+def generate_exam_timetabling_instance(instance_params=None):
+    """Construct an exam-timetabling instance from an optional parameter dict."""
+    if instance_params is None:
+        instance_params = {}
+
+    nsemesters = instance_params.get('nsemesters', 9)
+    courses_per_semester = instance_params.get('courses_per_semester', 6)
+    slots_per_day = instance_params.get('slots_per_day', 9)
+    days_for_exams = instance_params.get('days_for_exams', 14)
+
+    return construct_examtt_simple(nsemesters, courses_per_semester, slots_per_day, days_for_exams)
