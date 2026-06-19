@@ -123,6 +123,11 @@ Phase 1 supports `sudoku`, `examtt`, `nurse`, and `uefa`. Output pickles are
 written to `output/` and loaded by `main.py` when `--use_passive_constraints`
 is set.
 
+## Paper appendices
+
+- [Appendix B — Benchmark Problem Details](docs/appendix_b_benchmarks.md)
+- [Appendix C — Bayesian Parameter Validation and Sensitivity Analysis](docs/appendix_c_parameter_validation.md)
+
 ## Citation
 
 If you use this code, please cite the paper above.
