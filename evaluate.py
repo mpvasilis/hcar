@@ -26,6 +26,12 @@ from cpmpy.transformations.get_variables import get_variables
 warnings.filterwarnings("ignore")
 
 
+def _val(v):
+    """Read a variable's solved value; default unassigned (free) vars to their lb."""
+    x = v.value()
+    return int(x) if x is not None else int(v.lb)
+
+
 def _sample_solutions(constraints, variables, n_samples, hamming):
     """Sample up to n_samples Hamming-diverse solutions of `constraints`."""
     variables = list(variables)
@@ -37,7 +43,7 @@ def _sample_solutions(constraints, variables, n_samples, hamming):
             m += (cp.sum([variables[i] != int(prev[i]) for i in range(len(variables))]) >= hamming)
         if not m.solve():
             break
-        solutions.append([int(v.value()) for v in variables])
+        solutions.append([_val(v) for v in variables])
     return solutions
 
 

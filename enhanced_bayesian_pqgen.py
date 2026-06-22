@@ -85,7 +85,7 @@ class EnhancedBayesianPQGen(PQGen):
         return stats
     
     def print_assignment_history(self, constraint=None, max_to_show=3):
-        if constraint:
+        if constraint is not None:
             constraint_strs = [str(constraint)]
         else:
             constraint_strs = list(self.previous_assignments.keys())
