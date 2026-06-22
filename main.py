@@ -823,8 +823,10 @@ def construct_instance(experiment_name):
         instance_global, oracle_global = (result2[0], result2[1]) if len(result2) == 3 else result2
     elif 'nurse' in experiment_name.lower():
         n = 0
-        instance_binary, oracle_binary = construct_nurse_rostering()
-        instance_global, oracle_global = nr_global()
+        result1 = construct_nurse_rostering()
+        instance_binary, oracle_binary = (result1[0], result1[1]) if len(result1) == 3 else result1
+        result2 = nr_global()
+        instance_global, oracle_global = (result2[0], result2[1]) if len(result2) == 3 else result2
     elif 'uefa' in experiment_name.lower():
         print("Constructing UEFA problem")
         from benchmarks.uefa import construct_uefa as construct_uefa_instance_binary
