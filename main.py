@@ -427,7 +427,7 @@ def active_learning_system(
                 min_prob = prob
                 next_constraint = constraint
                 
-        if next_constraint:
+        if next_constraint is not None:
             min_prob_constraint = next_constraint
         else:
             min_prob_constraint = min(bias_proba.items(), key=lambda x: x[1])[0]
