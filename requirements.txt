@@ -1,6 +1,9 @@
-cpmpy
+# Python 3.10-3.12 recommended.
+# ortools is pinned <9.15 because newer releases changed the CpSolver.Solve()
+# API that cpmpy 0.9.x calls (and have no wheels for Python <=3.12 anyway).
+cpmpy==0.9.28
+ortools>=9.7,<9.15
 pycona
-ortools
 numpy
 pandas
 joblib

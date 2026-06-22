@@ -30,34 +30,53 @@ bayesian_quacq.py           Bayesian QuAcq learner used in Phase 2
 enhanced_bayesian_pqgen.py  Violation-driven query generation for Phase 2
 feature_extraction.py       Structural features fed to the XGBoost prior model
 
+vm_allocation_model.py      PM/VM data for the vm_allocation benchmark (10 PMs, 40 VMs)
+oracles.py                  CSPLib model zoo (training set for the prior model)
+train_prior_model.py        Regenerates the XGBoost prior model from oracles.py
+constraint_classifier_xgb.joblib  Trained XGBoost prior model (Phase 2)
+xgb_feature_columns.txt           Feature-column order for the prior model
+
 benchmarks/                 Binary (fixed-arity) encodings of the 5 benchmarks
 benchmarks_global/          Global-constraint encodings of the 5 benchmarks
 ```
 
 ## Requirements
 
-Python 3.9+ and the packages in `requirements.txt`:
+Python **3.10–3.12** recommended, plus the packages in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-The solver backend is Google OR-Tools CP-SAT, pulled in via `ortools`. The
-machine-learning prior uses `xgboost` (loaded with `joblib`).
+The solver backend is Google OR-Tools CP-SAT. `ortools` is pinned `<9.15`: newer
+releases changed the `CpSolver.Solve()` API that `cpmpy 0.9.x` calls (and ship no
+wheels for Python ≤3.12). The ML prior uses `xgboost` (loaded via `joblib`).
 
-## Required user-supplied files
+## Data and model artifacts
 
-Two artifacts are **not** included in this repository and must be added before
-the corresponding feature works:
+Everything needed to run the pipeline is included in the repository:
 
-| File | Needed for | Effect if missing |
-|------|------------|-------------------|
-| `vm_allocation_model.py` (must define `PM_DATA` and `VM_DATA`) | the `vm_allocation` benchmark | `vm_allocation` raises `ImportError` |
-| `constraint_classifier_xgb.joblib` + `xgb_feature_columns.txt` | ML-based confidence priors (Phase 2) | priors silently fall back to a flat `0.5` |
+| File | Used for |
+|------|----------|
+| `vm_allocation_model.py` (`PM_DATA`, `VM_DATA`) | the `vm_allocation` benchmark |
+| `constraint_classifier_xgb.joblib` + `xgb_feature_columns.txt` | ML confidence priors (Phase 2) |
 
-Place these files in the repository root. Without the XGBoost model the pipeline
-still runs — it simply uses uninformative priors (the "No ML Priors" ablation
-from the paper).
+> **Reproduction note.** The original experiment-machine `vm_allocation_model.py`
+> and XGBoost model were not preserved in version control, so both are
+> *reconstructed* here: the VM instance follows the paper's Appendix B spec
+> (10 PMs / 40 VMs, GPU-equipped PMs, HA zones; verified satisfiable), and the
+> prior model is retrained from the CSPLib problems in `oracles.py`. Reported
+> numbers therefore approximate, but will not be bit-identical to, the paper's.
+> HCAR is robust to prior noise (the Bayesian update corrects wrong priors), so
+> this mainly affects query efficiency, not final accuracy. If the XGBoost
+> artifacts are absent, priors fall back to a flat `0.5` (the "No ML Priors"
+> ablation).
+
+To retrain the prior model from scratch:
+
+```bash
+python train_prior_model.py     # writes constraint_classifier_xgb.joblib + xgb_feature_columns.txt
+```
 
 ## Quick start
 
@@ -68,7 +87,7 @@ python main.py --experiment sudoku        --use_bayesian
 python main.py --experiment examtt        --use_bayesian
 python main.py --experiment nurse         --use_bayesian
 python main.py --experiment uefa          --use_bayesian
-python main.py --experiment vm_allocation --use_bayesian   # needs vm_allocation_model.py
+python main.py --experiment vm_allocation --use_bayesian
 ```
 
 Or run all five through the runner:
