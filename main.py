@@ -1073,6 +1073,19 @@ if __name__ == "__main__":
 
     final_constraints = learned_instance.get_cpmpy_model().constraints
     final_model = learned_instance.get_cpmpy_model()
+
+    # Solution-space precision/recall of the learned model vs the target (paper metric).
+    s_prec = s_rec = None
+    try:
+        from evaluate import solution_space_metrics
+        s_prec, s_rec = solution_space_metrics(
+            list(final_constraints), list(oracle_binary.constraints),
+            list(instance_binary.X), n_samples=50, hamming=5
+        )
+        print(f"Solution-space Precision: {s_prec*100:.1f}%  Recall: {s_rec*100:.1f}%")
+    except Exception as e:
+        print(f"[evaluate] could not compute S-Prec/S-Rec: {e}")
+
     print(ca_system.env.metrics.short_statistics)
     print(f"Total Violation Queries: {total_violation_queries} Queries - Time: {violation_time:.2f} seconds")
     print(f"Total MQuAcq2 Queries: {ca_system.env.metrics.total_queries} Queries - Time: {ca_system.env.metrics.total_time:.2f} seconds")
@@ -1097,6 +1110,8 @@ if __name__ == "__main__":
         'MQuAcq2_time_seconds': round(ca_system.env.metrics.total_time,2),
         'total_queries': total_violation_queries + ca_system.env.metrics.total_queries,
         'total_time_seconds': round(violation_time + ca_system.env.metrics.total_time),
+        's_precision': round(s_prec*100, 1) if s_prec is not None else None,
+        's_recall': round(s_rec*100, 1) if s_rec is not None else None,
         'used_passive_constraints': use_passive_constraints,
         'passive_constraints_loaded': len(passive_constraint_data.get('learned_constraints', [])) if passive_constraint_data else 0
     }
