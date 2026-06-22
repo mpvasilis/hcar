@@ -1078,9 +1078,11 @@ if __name__ == "__main__":
     s_prec = s_rec = None
     try:
         from evaluate import solution_space_metrics
+        # Compare the learned model against the target over the SAME variables
+        # (instance.X), i.e. the global ground-truth oracle.
         s_prec, s_rec = solution_space_metrics(
-            list(final_constraints), list(oracle_binary.constraints),
-            list(instance_binary.X), n_samples=50, hamming=5
+            list(final_constraints), list(oracle.constraints),
+            list(instance.X), n_samples=50, hamming=5
         )
         print(f"Solution-space Precision: {s_prec*100:.1f}%  Recall: {s_rec*100:.1f}%")
     except Exception as e:
