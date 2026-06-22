@@ -1064,7 +1064,7 @@ if __name__ == "__main__":
     print(f"Biases: {len(biases)}")
     instance.bias = biases
     instance.cl = constraints_decomposed
-    instance.cl.append(final_valid_constraints)
+    instance.cl.extend(final_valid_constraints)
 
     ca_system = MQuAcq2()
 
