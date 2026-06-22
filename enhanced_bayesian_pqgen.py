@@ -29,6 +29,33 @@ def weighted_violation_objective(B, ca_env):
     return weighted_sum
 
 
+def _register_objective():
+    """Allow this module's objective past pycona's PQGen objective registry.
+
+    Recent pycona versions gate PQGen objectives with
+    ``assert obj in Objectives.qgen_objectives()``. This registers our own
+    ``weighted_violation_objective`` so the gate accepts it; the objective's
+    computation is unchanged.
+    """
+    try:
+        from pycona.utils import Objectives
+        base = Objectives.qgen_objectives.__func__
+        if getattr(Objectives, "_hcar_registered", False):
+            return
+        def qgen_objectives(cls):
+            objs = list(base(cls))
+            if weighted_violation_objective not in objs:
+                objs.append(weighted_violation_objective)
+            return objs
+        Objectives.qgen_objectives = classmethod(qgen_objectives)
+        Objectives._hcar_registered = True
+    except Exception:
+        pass
+
+
+_register_objective()
+
+
 class EnhancedBayesianPQGen(PQGen):
     """PQGen variant using a Bayesian weighted-violation objective and assignment history."""
 
