@@ -78,6 +78,13 @@ To retrain the prior model from scratch:
 python train_prior_model.py     # writes constraint_classifier_xgb.joblib + xgb_feature_columns.txt
 ```
 
+The **original** experiment-machine artifacts (recovered from a feature branch of
+the predecessor project) are archived under
+[`original_artifacts/`](original_artifacts/PROVENANCE.md). They are kept for
+provenance only — they use an older feature schema and a VM instance that is
+infeasible for this repo's binary encoding, so the working reconstructions above
+are the defaults. See the provenance note for details.
+
 ## Quick start
 
 Run a single benchmark (Phase 2 + Phase 3):
