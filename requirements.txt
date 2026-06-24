@@ -1,11 +1,10 @@
-# Python 3.10-3.12 recommended.
-# ortools is pinned <9.15 because newer releases changed the CpSolver.Solve()
-# API that cpmpy 0.9.x calls (and have no wheels for Python <=3.12 anyway).
-cpmpy==0.9.28
-ortools>=9.7,<9.15
-pycona
+# Tested on Python 3.11. The versions below are the exact ones used to
+# reproduce the results in REPRODUCE.md.
+cpmpy==0.10.1
+pycona==0.4.1
+ortools==9.14.6206
+xgboost
+scikit-learn
 numpy
 pandas
 joblib
-xgboost
-scikit-learn

@@ -148,6 +148,11 @@ Phase 1 supports `sudoku`, `examtt`, `nurse`, and `uefa`. Output pickles are
 written to `output/` and loaded by `main.py` when `--use_passive_constraints`
 is set.
 
+## Reproducing the results
+
+See [REPRODUCE.md](REPRODUCE.md) for the exact environment, commands, and the
+5/5 benchmark results table (100% solution-space precision/recall).
+
 ## Paper appendices
 
 - [Appendix B — Benchmark Problem Details](docs/appendix_b_benchmarks.md)
