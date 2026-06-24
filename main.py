@@ -1076,6 +1076,16 @@ if __name__ == "__main__":
 
     cl_binary = _to_binary_vars(constraints_decomposed) + _to_binary_vars(final_valid_constraints)
 
+    # The Phase-3 oracle must encode the TRUE target (the paper's C_T = the global
+    # model), expressed over the binary variables. Some binary benchmark
+    # definitions are over-constrained/UNSAT, so we do NOT use them as the oracle;
+    # we translate the global ground-truth instead. This keeps the oracle correct
+    # and lets Phase 3 reject the spurious binary candidates in the bias.
+    from pycona import ConstraintOracle
+    target_binary = _to_binary_vars(list(oracle.constraints))
+    oracle_p3 = ConstraintOracle(list(target_binary))
+    oracle_p3.variables_list = cpm_array(list(instance_binary.X))
+
     for c in oracle_binary.constraints:
         if c not in set(cl_binary) and c not in biases and "AllDifferent" not in str(c) and "Sum" not in str(c) and "Count" not in str(c):
             biases.append(c)
@@ -1087,21 +1097,21 @@ if __name__ == "__main__":
     ca_system = MQuAcq2()
 
     try:
-        learned_instance = ca_system.learn(instance_binary, oracle=oracle_binary, verbose=3)
+        learned_instance = ca_system.learn(instance_binary, oracle=oracle_p3, verbose=3)
         final_constraints = learned_instance.get_cpmpy_model().constraints
         final_model = learned_instance.get_cpmpy_model()
     except Exception as e:
         print(f"[phase3] MQuAcq2 failed ({e}); falling back to refined globals C'_G only")
         final_constraints = cl_binary
-        final_model = cp.Model(cl_binary)
+        final_model = Model(cl_binary)
 
-    # Solution-space precision/recall of the learned model vs the target (paper metric),
-    # evaluated over the binary instance's variables against the binary oracle.
+    # Solution-space precision/recall of the learned model vs the true target,
+    # both over the binary instance's variables.
     s_prec = s_rec = None
     try:
         from evaluate import solution_space_metrics
         s_prec, s_rec = solution_space_metrics(
-            list(final_constraints), list(oracle_binary.constraints),
+            list(final_constraints), list(target_binary),
             list(instance_binary.X), n_samples=50, hamming=5
         )
         print(f"Solution-space Precision: {s_prec*100:.1f}%  Recall: {s_rec*100:.1f}%")
