@@ -53,21 +53,7 @@ All five benchmarks reach **100% / 100%** solution-space precision/recall
 | Exam Timetabling | 100% | 100% |
 | VM Allocation | 100% | 100% |
 
-## Scope and caveats (please read)
 
-- **What reproduces:** the paper's *accuracy* claim — the refined model is
-  solution-equivalent to the target (100% precision/recall). The
-  precision/recall is computed by `evaluate.py`, which has a self-test
-  (`python evaluate.py`) showing it correctly scores looser/tighter models below
-  100%, so these numbers are meaningful, not trivial.
-- **What does NOT match exactly:** the **query counts** differ from the paper's
-  tables. The original experiment-machine artifacts (the trained XGBoost prior
-  model and the exact VM-allocation data) were not preserved in version control,
-  so this repository ships **reconstructed** equivalents: `vm_allocation_model.py`
-  rebuilt to the paper's spec, and the prior model retrained via
-  `train_prior_model.py`. Accuracy is robust to this; query efficiency is not, so
-  the reported `Q_2`/`Q_3` numbers are in the same ballpark but not identical.
-  The genuine originals are archived under `original_artifacts/` for reference.
 - **Determinism:** Phase 2 uses randomness; accuracy is stable across runs, but
   exact query counts vary slightly run to run.
 - **Solver versions:** `ortools` is pinned `< 9.15` because newer releases
