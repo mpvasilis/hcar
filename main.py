@@ -1058,33 +1058,51 @@ if __name__ == "__main__":
             c_decomposed = c.decompose()[0]
             constraints_decomposed.extend(c_decomposed)
 
+    # Phase 3 runs MQuAcq-2 in the BINARY instance's variable space. The binary
+    # and global instances share variable NAMES but use distinct objects, so the
+    # learned global constraints (over global vars) must be re-expressed over the
+    # binary variables before they can serve as background theory for Phase 3.
+    from pycona.utils import replace_variables
+    _bin_by_name = {v.name: v for v in get_variables(list(instance_binary.X))}
+
+    def _to_binary_vars(cons):
+        out = []
+        for c in cons:
+            cvars = get_variables(c)
+            mapping = {v: _bin_by_name[v.name] for v in cvars if v.name in _bin_by_name}
+            if len(mapping) == len(cvars) and cvars:
+                out.append(replace_variables(c, mapping))
+        return out
+
+    cl_binary = _to_binary_vars(constraints_decomposed) + _to_binary_vars(final_valid_constraints)
 
     for c in oracle_binary.constraints:
-        if c not in set(constraints_decomposed) and c not in biases and "AllDifferent" not in str(c) and "Sum" not in str(c) and "Count" not in str(c):
+        if c not in set(cl_binary) and c not in biases and "AllDifferent" not in str(c) and "Sum" not in str(c) and "Count" not in str(c):
             biases.append(c)
 
     print(f"Biases: {len(biases)}")
-    instance.bias = biases
-    instance.cl = constraints_decomposed
-    instance.cl.extend(final_valid_constraints)
+    instance_binary.bias = biases
+    instance_binary.cl = cl_binary
 
     ca_system = MQuAcq2()
 
+    try:
+        learned_instance = ca_system.learn(instance_binary, oracle=oracle_binary, verbose=3)
+        final_constraints = learned_instance.get_cpmpy_model().constraints
+        final_model = learned_instance.get_cpmpy_model()
+    except Exception as e:
+        print(f"[phase3] MQuAcq2 failed ({e}); falling back to refined globals C'_G only")
+        final_constraints = cl_binary
+        final_model = cp.Model(cl_binary)
 
-    learned_instance = ca_system.learn(instance, oracle=oracle_binary, verbose=3)
-
-    final_constraints = learned_instance.get_cpmpy_model().constraints
-    final_model = learned_instance.get_cpmpy_model()
-
-    # Solution-space precision/recall of the learned model vs the target (paper metric).
+    # Solution-space precision/recall of the learned model vs the target (paper metric),
+    # evaluated over the binary instance's variables against the binary oracle.
     s_prec = s_rec = None
     try:
         from evaluate import solution_space_metrics
-        # Compare the learned model against the target over the SAME variables
-        # (instance.X), i.e. the global ground-truth oracle.
         s_prec, s_rec = solution_space_metrics(
-            list(final_constraints), list(oracle.constraints),
-            list(instance.X), n_samples=50, hamming=5
+            list(final_constraints), list(oracle_binary.constraints),
+            list(instance_binary.X), n_samples=50, hamming=5
         )
         print(f"Solution-space Precision: {s_prec*100:.1f}%  Recall: {s_rec*100:.1f}%")
     except Exception as e:
